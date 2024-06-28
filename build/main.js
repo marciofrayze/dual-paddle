@@ -604,7 +604,7 @@ ${variant}`;
   var VERSION = "1.1.3";
   var TARGET_NAME = "My target name";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1719595780298"
+    "1719605662664"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -7567,6 +7567,7 @@ var $elm$core$Basics$identity = function (x) {
 var $author$project$Main$Frame = function (a) {
 	return {$: 'Frame', a: a};
 };
+var $author$project$Main$NotMoving = {$: 'NotMoving'};
 var $elm$core$Basics$add = _Basics_add;
 var $elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
@@ -8273,6 +8274,8 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$element = _Browser_element;
+var $author$project$Main$gameHeight = 600;
+var $author$project$Main$gameWidth = 800;
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$browser$Browser$AnimationManager$Delta = function (a) {
@@ -8419,7 +8422,6 @@ var $joakin$elm_canvas$Canvas$Settings$fill = function (color) {
 	return $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp(
 		$joakin$elm_canvas$Canvas$Internal$Canvas$Fill(color));
 };
-var $author$project$Main$height = 600;
 var $joakin$elm_canvas$Canvas$Internal$Canvas$Rect = F3(
 	function (a, b, c) {
 		return {$: 'Rect', a: a, b: b, c: c};
@@ -8559,7 +8561,6 @@ var $avh4$elm_color$Color$RgbaSpace = F4(
 		return {$: 'RgbaSpace', a: a, b: b, c: c, d: d};
 	});
 var $avh4$elm_color$Color$white = A4($avh4$elm_color$Color$RgbaSpace, 255 / 255, 255 / 255, 255 / 255, 1.0);
-var $author$project$Main$width = 800;
 var $author$project$Main$clearScreen = A2(
 	$joakin$elm_canvas$Canvas$shapes,
 	_List_fromArray(
@@ -8571,16 +8572,10 @@ var $author$project$Main$clearScreen = A2(
 			A3(
 			$joakin$elm_canvas$Canvas$rect,
 			_Utils_Tuple2(0, 0),
-			$author$project$Main$width,
-			$author$project$Main$height)
+			$author$project$Main$gameWidth,
+			$author$project$Main$gameHeight)
 		]));
 var $elm$html$Html$div = _VirtualDom_node('div');
-var $author$project$Main$centerX = $author$project$Main$width / 2;
-var $author$project$Main$centerY = $author$project$Main$height / 2;
-var $elm$core$Basics$pi = _Basics_pi;
-var $elm$core$Basics$degrees = function (angleInDegrees) {
-	return (angleInDegrees * $elm$core$Basics$pi) / 180;
-};
 var $elm$core$String$fromFloat = _String_fromNumber;
 var $joakin$elm_canvas$Canvas$Internal$Canvas$DrawableGroup = function (a) {
 	return {$: 'DrawableGroup', a: a};
@@ -8597,34 +8592,13 @@ var $joakin$elm_canvas$Canvas$group = F2(
 					drawable: $joakin$elm_canvas$Canvas$Internal$Canvas$DrawableGroup(entities)
 				}));
 	});
-var $avh4$elm_color$Color$hsla = F4(
-	function (hue, sat, light, alpha) {
-		var _v0 = _Utils_Tuple3(hue, sat, light);
-		var h = _v0.a;
-		var s = _v0.b;
-		var l = _v0.c;
-		var m2 = (l <= 0.5) ? (l * (s + 1)) : ((l + s) - (l * s));
-		var m1 = (l * 2) - m2;
-		var hueToRgb = function (h__) {
-			var h_ = (h__ < 0) ? (h__ + 1) : ((h__ > 1) ? (h__ - 1) : h__);
-			return ((h_ * 6) < 1) ? (m1 + (((m2 - m1) * h_) * 6)) : (((h_ * 2) < 1) ? m2 : (((h_ * 3) < 2) ? (m1 + (((m2 - m1) * ((2 / 3) - h_)) * 6)) : m1));
-		};
-		var b = hueToRgb(h - (1 / 3));
-		var g = hueToRgb(h);
-		var r = hueToRgb(h + (1 / 3));
-		return A4($avh4$elm_color$Color$RgbaSpace, r, g, b, alpha);
-	});
-var $avh4$elm_color$Color$hsl = F3(
-	function (h, s, l) {
-		return A4($avh4$elm_color$Color$hsla, h, s, l, 1.0);
-	});
-var $elm$core$Basics$negate = function (n) {
-	return -n;
+var $author$project$Main$playerShape = function (player) {
+	return A3(
+		$joakin$elm_canvas$Canvas$rect,
+		_Utils_Tuple2(player.x, player.y),
+		player.width,
+		player.height);
 };
-var $joakin$elm_canvas$Canvas$Settings$Advanced$Rotate = function (a) {
-	return {$: 'Rotate', a: a};
-};
-var $joakin$elm_canvas$Canvas$Settings$Advanced$rotate = $joakin$elm_canvas$Canvas$Settings$Advanced$Rotate;
 var $joakin$elm_canvas$Canvas$Internal$Canvas$DrawableText = function (a) {
 	return {$: 'DrawableText', a: a};
 };
@@ -8641,10 +8615,30 @@ var $joakin$elm_canvas$Canvas$text = F3(
 						{maxWidth: $elm$core$Maybe$Nothing, point: point, text: str})
 				}));
 	});
-var $joakin$elm_canvas$Canvas$Internal$Canvas$SettingCommands = function (a) {
-	return {$: 'SettingCommands', a: a};
-};
-var $elm$json$Json$Encode$float = _Json_wrap;
+var $author$project$Main$renderGame = F2(
+	function (count, player) {
+		var gameShapes = A2(
+			$joakin$elm_canvas$Canvas$shapes,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$author$project$Main$playerShape(player)
+				]));
+		var frameCountText = A3(
+			$joakin$elm_canvas$Canvas$text,
+			_List_Nil,
+			_Utils_Tuple2(50, 50),
+			$elm$core$String$fromFloat(count));
+		return A2(
+			$joakin$elm_canvas$Canvas$group,
+			_List_Nil,
+			_List_fromArray(
+				[gameShapes, frameCountText]));
+	});
+var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
+var $elm$html$Html$canvas = _VirtualDom_node('canvas');
+var $joakin$elm_canvas$Canvas$cnvs = A2($elm$html$Html$canvas, _List_Nil, _List_Nil);
 var $elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -8654,6 +8648,32 @@ var $elm$json$Json$Encode$list = F2(
 				_Json_emptyArray(_Utils_Tuple0),
 				entries));
 	});
+var $elm$virtual_dom$VirtualDom$property = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_property,
+			_VirtualDom_noInnerHtmlOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlJson(value));
+	});
+var $elm$html$Html$Attributes$property = $elm$virtual_dom$VirtualDom$property;
+var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$commands = function (list) {
+	return A2(
+		$elm$html$Html$Attributes$property,
+		'cmds',
+		A2($elm$json$Json$Encode$list, $elm$core$Basics$identity, list));
+};
+var $elm$html$Html$Attributes$height = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'height',
+		$elm$core$String$fromInt(n));
+};
+var $elm$virtual_dom$VirtualDom$keyedNode = function (tag) {
+	return _VirtualDom_keyedNode(
+		_VirtualDom_noScript(tag));
+};
+var $elm$html$Html$Keyed$node = $elm$virtual_dom$VirtualDom$keyedNode;
+var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$empty = _List_Nil;
 var $elm$json$Json$Encode$object = function (pairs) {
 	return _Json_wrap(
 		A3(
@@ -8684,157 +8704,6 @@ var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$fn = F2(
 					A2($elm$json$Json$Encode$list, $elm$core$Basics$identity, args))
 				]));
 	});
-var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$rotate = function (angle) {
-	return A2(
-		$joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$fn,
-		'rotate',
-		_List_fromArray(
-			[
-				$elm$json$Json$Encode$float(angle)
-			]));
-};
-var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$scale = F2(
-	function (x, y) {
-		return A2(
-			$joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$fn,
-			'scale',
-			_List_fromArray(
-				[
-					$elm$json$Json$Encode$float(x),
-					$elm$json$Json$Encode$float(y)
-				]));
-	});
-var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$transform = F6(
-	function (a, b, c, d, e, f) {
-		return A2(
-			$joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$fn,
-			'transform',
-			_List_fromArray(
-				[
-					$elm$json$Json$Encode$float(a),
-					$elm$json$Json$Encode$float(b),
-					$elm$json$Json$Encode$float(c),
-					$elm$json$Json$Encode$float(d),
-					$elm$json$Json$Encode$float(e),
-					$elm$json$Json$Encode$float(f)
-				]));
-	});
-var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$translate = F2(
-	function (x, y) {
-		return A2(
-			$joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$fn,
-			'translate',
-			_List_fromArray(
-				[
-					$elm$json$Json$Encode$float(x),
-					$elm$json$Json$Encode$float(y)
-				]));
-	});
-var $joakin$elm_canvas$Canvas$Settings$Advanced$transform = function (transforms) {
-	return $joakin$elm_canvas$Canvas$Internal$Canvas$SettingCommands(
-		A2(
-			$elm$core$List$map,
-			function (t) {
-				switch (t.$) {
-					case 'Rotate':
-						var angle = t.a;
-						return $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$rotate(angle);
-					case 'Scale':
-						var x = t.a;
-						var y = t.b;
-						return A2($joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$scale, x, y);
-					case 'Translate':
-						var x = t.a;
-						var y = t.b;
-						return A2($joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$translate, x, y);
-					default:
-						var m11 = t.a.m11;
-						var m12 = t.a.m12;
-						var m21 = t.a.m21;
-						var m22 = t.a.m22;
-						var dx = t.a.dx;
-						var dy = t.a.dy;
-						return A6($joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$transform, m11, m12, m21, m22, dx, dy);
-				}
-			},
-			transforms));
-};
-var $joakin$elm_canvas$Canvas$Settings$Advanced$Translate = F2(
-	function (a, b) {
-		return {$: 'Translate', a: a, b: b};
-	});
-var $joakin$elm_canvas$Canvas$Settings$Advanced$translate = $joakin$elm_canvas$Canvas$Settings$Advanced$Translate;
-var $author$project$Main$render = function (count) {
-	var size = $author$project$Main$width / 3;
-	var x = -(size / 2);
-	var y = -(size / 2);
-	var myText = A3(
-		$joakin$elm_canvas$Canvas$text,
-		_List_Nil,
-		_Utils_Tuple2(50, 50),
-		$elm$core$String$fromFloat(count));
-	var myShapes = A2(
-		$joakin$elm_canvas$Canvas$shapes,
-		_List_fromArray(
-			[
-				$joakin$elm_canvas$Canvas$Settings$Advanced$transform(
-				_List_fromArray(
-					[
-						A2($joakin$elm_canvas$Canvas$Settings$Advanced$translate, $author$project$Main$centerX, $author$project$Main$centerY),
-						$joakin$elm_canvas$Canvas$Settings$Advanced$rotate(
-						$elm$core$Basics$degrees(count * 3))
-					])),
-				$joakin$elm_canvas$Canvas$Settings$fill(
-				A3(
-					$avh4$elm_color$Color$hsl,
-					$elm$core$Basics$degrees(count / 4),
-					0.3,
-					0.7))
-			]),
-		_List_fromArray(
-			[
-				A3(
-				$joakin$elm_canvas$Canvas$rect,
-				_Utils_Tuple2(x, y),
-				size,
-				size)
-			]));
-	return A2(
-		$joakin$elm_canvas$Canvas$group,
-		_List_Nil,
-		_List_fromArray(
-			[myShapes, myText]));
-};
-var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
-var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
-var $elm$html$Html$canvas = _VirtualDom_node('canvas');
-var $joakin$elm_canvas$Canvas$cnvs = A2($elm$html$Html$canvas, _List_Nil, _List_Nil);
-var $elm$virtual_dom$VirtualDom$property = F2(
-	function (key, value) {
-		return A2(
-			_VirtualDom_property,
-			_VirtualDom_noInnerHtmlOrFormAction(key),
-			_VirtualDom_noJavaScriptOrHtmlJson(value));
-	});
-var $elm$html$Html$Attributes$property = $elm$virtual_dom$VirtualDom$property;
-var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$commands = function (list) {
-	return A2(
-		$elm$html$Html$Attributes$property,
-		'cmds',
-		A2($elm$json$Json$Encode$list, $elm$core$Basics$identity, list));
-};
-var $elm$html$Html$Attributes$height = function (n) {
-	return A2(
-		_VirtualDom_attribute,
-		'height',
-		$elm$core$String$fromInt(n));
-};
-var $elm$virtual_dom$VirtualDom$keyedNode = function (tag) {
-	return _VirtualDom_keyedNode(
-		_VirtualDom_noScript(tag));
-};
-var $elm$html$Html$Keyed$node = $elm$virtual_dom$VirtualDom$keyedNode;
-var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$empty = _List_Nil;
 var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$beginPath = A2($joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$fn, 'beginPath', _List_Nil);
 var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$field = F2(
 	function (name, value) {
@@ -8890,6 +8759,7 @@ var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$fillStyle = function
 		$elm$json$Json$Encode$string(
 			$avh4$elm_color$Color$toCssString(color)));
 };
+var $elm$json$Json$Encode$float = _Json_wrap;
 var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$clearRect = F4(
 	function (x, y, width, height) {
 		return A2(
@@ -8928,6 +8798,7 @@ var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$arc = F6(
 					$elm$json$Json$Encode$bool(anticlockwise)
 				]));
 	});
+var $elm$core$Basics$pi = _Basics_pi;
 var $joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$circle = F3(
 	function (x, y, r) {
 		return A6($joakin$elm_canvas$Canvas$Internal$CustomElementJsonApi$arc, x, y, r, 0, 2 * $elm$core$Basics$pi, false);
@@ -9619,8 +9490,7 @@ var $joakin$elm_canvas$Canvas$toHtml = F3(
 			attrs,
 			entities);
 	});
-var $author$project$Main$view = function (_v0) {
-	var count = _v0.count;
+var $author$project$Main$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
@@ -9633,37 +9503,46 @@ var $author$project$Main$view = function (_v0) {
 			[
 				A3(
 				$joakin$elm_canvas$Canvas$toHtml,
-				_Utils_Tuple2($author$project$Main$width, $author$project$Main$height),
+				_Utils_Tuple2($author$project$Main$gameWidth, $author$project$Main$gameHeight),
 				_List_fromArray(
 					[
-						A2($elm$html$Html$Attributes$style, 'border', '10px solid rgba(0,0,0,0.1)')
+						A2($elm$html$Html$Attributes$style, 'border', '10px solid rgba(0,0,0,0.7)')
 					]),
 				_List_fromArray(
 					[
 						$author$project$Main$clearScreen,
-						$author$project$Main$render(count)
+						A2($author$project$Main$renderGame, model.count, model.player)
 					]))
 			]));
 };
-var $author$project$Main$main = $elm$browser$Browser$element(
-	{
-		init: function (_v0) {
-			return _Utils_Tuple2(
-				{count: 0},
-				$elm$core$Platform$Cmd$none);
-		},
-		subscriptions: function (model) {
-			return $elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$Frame);
-		},
-		update: F2(
-			function (msg, model) {
+var $author$project$Main$main = function () {
+	var initialPlayerWidth = 150;
+	var initialPlayerXPosition = ($author$project$Main$gameWidth / 2) - (initialPlayerWidth / 2);
+	var initialPlayerHeigth = 25;
+	var initialPlayerYPosition = $author$project$Main$gameHeight - (initialPlayerHeigth * 1.5);
+	return $elm$browser$Browser$element(
+		{
+			init: function (_v0) {
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{count: model.count + 1}),
+					{
+						count: 0,
+						player: {height: initialPlayerHeigth, moving: $author$project$Main$NotMoving, width: initialPlayerWidth, x: initialPlayerXPosition, y: initialPlayerYPosition}
+					},
 					$elm$core$Platform$Cmd$none);
-			}),
-		view: $author$project$Main$view
-	});
+			},
+			subscriptions: function (model) {
+				return $elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$Frame);
+			},
+			update: F2(
+				function (msg, model) {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{count: model.count + 1}),
+						$elm$core$Platform$Cmd$none);
+				}),
+			view: $author$project$Main$view
+		});
+}();
 _Platform_export({'Main':{'init':$author$project$Main$main(
 	$elm$json$Json$Decode$succeed(_Utils_Tuple0))(0)}});}(this));

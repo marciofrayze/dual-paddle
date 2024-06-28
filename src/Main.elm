@@ -11,17 +11,53 @@ import Html.Attributes exposing (style)
 
 
 type alias Model =
-    { count : Float }
+    { count : Float
+    , player : Player
+    }
 
 
 type Msg
     = Frame Float
 
 
+type PlayerMovement
+    = MovingLeft
+    | MovingRight
+    | NotMoving
+
+
+type alias Player =
+    { x : Float
+    , y : Float
+    , moving : PlayerMovement
+    , width : Float
+    , height : Float
+    }
+
+
 main : Program () Model Msg
 main =
+    let
+        initialPlayerWidth =
+            150
+
+        initialPlayerHeigth =
+            25
+
+        initialPlayerXPosition =
+            (gameWidth / 2) - (initialPlayerWidth / 2)
+
+        initialPlayerYPosition =
+            gameHeight - (initialPlayerHeigth * 1.5)
+    in
     Browser.element
-        { init = \() -> ( { count = 0 }, Cmd.none )
+        { init =
+            \() ->
+                ( { count = 0
+                  , player = { x = initialPlayerXPosition, y = initialPlayerYPosition, moving = NotMoving, width = initialPlayerWidth, height = initialPlayerHeigth }
+                  }
+                , Cmd.none
+                )
         , view = view
         , update =
             \msg model ->
@@ -32,71 +68,49 @@ main =
         }
 
 
-width : number
-width =
+gameWidth : number
+gameWidth =
     800
 
 
-height : number
-height =
+gameHeight : number
+gameHeight =
     600
 
 
-centerX : Float
-centerX =
-    width / 2
-
-
-centerY : Float
-centerY =
-    height / 2
-
-
 view : Model -> Html Msg
-view { count } =
+view model =
     div
         [ style "display" "flex"
         , style "justify-content" "center"
         , style "align-items" "center"
         ]
         [ Canvas.toHtml
-            ( width, height )
-            [ style "border" "10px solid rgba(0,0,0,0.1)" ]
+            ( gameWidth, gameHeight )
+            [ style "border" "10px solid rgba(0,0,0,0.7)" ]
             [ clearScreen
-            , render count
+            , renderGame model.count model.player
             ]
         ]
 
 
 clearScreen : Renderable
 clearScreen =
-    shapes [ fill Color.white ] [ rect ( 0, 0 ) width height ]
+    shapes [ fill Color.white ] [ rect ( 0, 0 ) gameWidth gameHeight ]
 
 
-render : Float -> Renderable
-render count =
+playerShape : Player -> Shape
+playerShape player =
+    rect ( player.x, player.y ) player.width player.height
+
+
+renderGame : Float -> Player -> Renderable
+renderGame count player =
     let
-        size =
-            width / 3
+        gameShapes =
+            shapes [] [ playerShape player ]
 
-        x =
-            -(size / 2)
-
-        y =
-            -(size / 2)
-
-        myShapes =
-            shapes
-                [ transform
-                    [ translate centerX centerY
-                    , rotate (degrees (count * 3))
-                    ]
-                , fill (Color.hsl (degrees (count / 4)) 0.3 0.7)
-                ]
-                [ rect ( x, y ) size size
-                ]
-
-        myText =
+        frameCountText =
             text [] ( 50, 50 ) (String.fromFloat count)
     in
-    group [] [ myShapes, myText ]
+    group [] [ gameShapes, frameCountText ]

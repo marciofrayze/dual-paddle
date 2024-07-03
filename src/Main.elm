@@ -1,13 +1,14 @@
 module Main exposing (main)
 
 import Browser
-import Browser.Events exposing (onAnimationFrameDelta)
+import Browser.Events exposing (onAnimationFrameDelta, onKeyDown, onKeyUp)
 import Canvas exposing (..)
 import Canvas.Settings exposing (..)
 import Canvas.Settings.Advanced exposing (..)
 import Color
 import Html exposing (Html, div)
 import Html.Attributes exposing (style)
+import Json.Decode as Decode
 
 
 type alias Model =
@@ -18,6 +19,8 @@ type alias Model =
 
 type Msg
     = Frame Float
+    | KeyDown String
+    | KeyUp String
 
 
 type PlayerMovement
@@ -42,7 +45,7 @@ main =
             150
 
         initialPlayerHeigth =
-            25
+            15
 
         initialPlayerXPosition =
             (gameWidth / 2) - (initialPlayerWidth / 2)
@@ -59,12 +62,8 @@ main =
                 , Cmd.none
                 )
         , view = view
-        , update =
-            \msg model ->
-                case msg of
-                    Frame _ ->
-                        ( { model | count = model.count + 1 }, Cmd.none )
-        , subscriptions = \model -> onAnimationFrameDelta Frame
+        , update = update
+        , subscriptions = subscriptions
         }
 
 
@@ -114,3 +113,84 @@ renderGame count player =
             text [] ( 50, 50 ) (String.fromFloat count)
     in
     group [] [ gameShapes, frameCountText ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ onAnimationFrameDelta Frame
+        , onKeyDown (Decode.map KeyDown keyDecoder)
+        , onKeyUp (Decode.map KeyUp keyDecoder)
+        ]
+
+
+keyDecoder : Decode.Decoder String
+keyDecoder =
+    Decode.field "key" Decode.string
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    let
+        updatePlayerMovement player movement =
+            { player | moving = movement }
+    in
+    case msg of
+        Frame delta ->
+            let
+                newModel =
+                    case model.player.moving of
+                        MovingLeft ->
+                            let
+                                newPlayerXPosition =
+                                    model.player.x - (delta * 0.1)
+
+                                updatePlayerXPosition player x =
+                                    { player | x = x }
+                            in
+                            { model | player = updatePlayerXPosition model.player newPlayerXPosition }
+
+                        MovingRight ->
+                            let
+                                newPlayerXPosition =
+                                    model.player.x + (delta * 0.1)
+
+                                updatePlayerXPosition player x =
+                                    { player | x = x }
+                            in
+                            { model | player = updatePlayerXPosition model.player newPlayerXPosition }
+
+                        NotMoving ->
+                            model
+            in
+            ( newModel, Cmd.none )
+
+        KeyDown key ->
+            case key of
+                "ArrowLeft" ->
+                    ( { model | player = updatePlayerMovement model.player MovingLeft }, Cmd.none )
+
+                "ArrowRight" ->
+                    ( { model | player = updatePlayerMovement model.player MovingRight }, Cmd.none )
+
+                _ ->
+                    ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
+
+        KeyUp key ->
+            case model.player.moving of
+                MovingLeft ->
+                    if key == "ArrowLeft" then
+                        ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
+
+                MovingRight ->
+                    if key == "ArrowRight" then
+                        ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
+
+                NotMoving ->
+                    ( model, Cmd.none )

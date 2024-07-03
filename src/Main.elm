@@ -151,8 +151,30 @@ keyDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        updatePlayerMovement player movement =
-            { player | moving = movement }
+        canMoveLeft player =
+            player.x > 0
+
+        canMoveRight player =
+            player.x + player.width < gameWidth
+
+        updatePlayerPosition player movement =
+            case movement of
+                MovingLeft ->
+                    if canMoveLeft player then
+                        { player | moving = movement }
+
+                    else
+                        { player | moving = NotMoving }
+
+                MovingRight ->
+                    if canMoveRight player then
+                        { player | moving = movement }
+
+                    else
+                        { player | moving = NotMoving }
+
+                NotMoving ->
+                    { player | moving = movement }
     in
     case msg of
         Frame delta ->
@@ -187,10 +209,10 @@ update msg model =
         KeyDown key ->
             case key of
                 ArrowLeft ->
-                    ( { model | player = updatePlayerMovement model.player MovingLeft }, Cmd.none )
+                    ( { model | player = updatePlayerPosition model.player MovingLeft }, Cmd.none )
 
                 ArrowRight ->
-                    ( { model | player = updatePlayerMovement model.player MovingRight }, Cmd.none )
+                    ( { model | player = updatePlayerPosition model.player MovingRight }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -199,14 +221,14 @@ update msg model =
             case model.player.moving of
                 MovingLeft ->
                     if key == ArrowLeft then
-                        ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
+                        ( { model | player = updatePlayerPosition model.player NotMoving }, Cmd.none )
 
                     else
                         ( model, Cmd.none )
 
                 MovingRight ->
                     if key == ArrowRight then
-                        ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
+                        ( { model | player = updatePlayerPosition model.player NotMoving }, Cmd.none )
 
                     else
                         ( model, Cmd.none )

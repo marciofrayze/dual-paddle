@@ -5,6 +5,7 @@ import Browser.Events exposing (onAnimationFrameDelta, onKeyDown, onKeyUp)
 import Canvas exposing (..)
 import Canvas.Settings exposing (..)
 import Canvas.Settings.Advanced exposing (..)
+import Canvas.Settings.Text exposing (TextAlign(..))
 import Color
 import Html exposing (Html, div)
 import Html.Attributes exposing (style)
@@ -19,8 +20,8 @@ type alias Model =
 
 type Msg
     = Frame Float
-    | KeyDown String
-    | KeyUp String
+    | KeyDown Key
+    | KeyUp Key
 
 
 type PlayerMovement
@@ -36,6 +37,12 @@ type alias Player =
     , width : Float
     , height : Float
     }
+
+
+type Key
+    = ArrowLeft
+    | ArrowRight
+    | UnknownKey
 
 
 main : Program () Model Msg
@@ -124,9 +131,21 @@ subscriptions model =
         ]
 
 
-keyDecoder : Decode.Decoder String
+keyDecoder : Decode.Decoder Key
 keyDecoder =
     Decode.field "key" Decode.string
+        |> Decode.andThen
+            (\key ->
+                case key of
+                    "ArrowLeft" ->
+                        Decode.succeed ArrowLeft
+
+                    "ArrowRight" ->
+                        Decode.succeed ArrowRight
+
+                    _ ->
+                        Decode.succeed UnknownKey
+            )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -167,10 +186,10 @@ update msg model =
 
         KeyDown key ->
             case key of
-                "ArrowLeft" ->
+                ArrowLeft ->
                     ( { model | player = updatePlayerMovement model.player MovingLeft }, Cmd.none )
 
-                "ArrowRight" ->
+                ArrowRight ->
                     ( { model | player = updatePlayerMovement model.player MovingRight }, Cmd.none )
 
                 _ ->
@@ -179,14 +198,14 @@ update msg model =
         KeyUp key ->
             case model.player.moving of
                 MovingLeft ->
-                    if key == "ArrowLeft" then
+                    if key == ArrowLeft then
                         ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
 
                     else
                         ( model, Cmd.none )
 
                 MovingRight ->
-                    if key == "ArrowRight" then
+                    if key == ArrowRight then
                         ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
 
                     else

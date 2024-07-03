@@ -193,7 +193,7 @@ update msg model =
                     ( { model | player = updatePlayerMovement model.player MovingRight }, Cmd.none )
 
                 _ ->
-                    ( { model | player = updatePlayerMovement model.player NotMoving }, Cmd.none )
+                    ( model, Cmd.none )
 
         KeyUp key ->
             case model.player.moving of

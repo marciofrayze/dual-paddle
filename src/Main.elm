@@ -184,7 +184,7 @@ update msg model =
                         MovingLeft ->
                             let
                                 newPlayerXPosition =
-                                    model.player.x - (delta * 0.1)
+                                    model.player.x - (delta * 0.5)
 
                                 updatePlayerXPosition player x =
                                     { player | x = x }
@@ -194,7 +194,7 @@ update msg model =
                         MovingRight ->
                             let
                                 newPlayerXPosition =
-                                    model.player.x + (delta * 0.1)
+                                    model.player.x + (delta * 0.5)
 
                                 updatePlayerXPosition player x =
                                     { player | x = x }

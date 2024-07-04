@@ -1,4 +1,4 @@
-.PHONY: help web test tests
+.PHONY: help build-prod
 
 help:
 	@echo "\n\nAvailable commands:\n"

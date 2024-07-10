@@ -4,13 +4,14 @@ help:
 	@echo "\n\nAvailable commands:\n"
 	@echo "run-elm-watch-hot: run locally in dev mode with hot reload using elm-watch.\n"
 	@echo "build-prod: build the production version of the webapp using elm-watch.\n"
+	@echo "upgrade: upgrade the elm dependencies using elm-json.\n"
+	@echo "upgrade-unsafe: upgrade the elm dependencies using elm-json with the --unsafe flag.\n"
+	@echo "review: run elm-review.\n"
+	@echo "review-fix: run elm-review with the --fix flag.\n"
 	@echo "\n"
 
 run-elm-watch-hot:
 	npx elm-watch hot
-
-run-local-http-server:
-	http-server
 
 build-prod:
 	npx elm-watch make --optimize

@@ -1,4 +1,4 @@
-.PHONY: help build-prod
+.PHONY: help build-prod review review-fix
 
 help:
 	@echo "\n\nAvailable commands:\n"
@@ -21,3 +21,15 @@ build-prod:
 	cp index.html build/index.html
 	@say -v "Trinoids" Finished building dual paddle for web.
 	open build/index.html 
+
+upgrade:
+	elm-json upgrade
+
+upgrade-unsafe:
+	elm-json upgrade --unsafe
+
+review:
+	elm-review
+
+review-fix:
+	elm-review --fix

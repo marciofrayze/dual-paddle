@@ -14,4 +14,10 @@ run-local-http-server:
 
 build-prod:
 	npx elm-watch make --optimize
-	@say -v "Trinoids" Finished building production version of the webapp
+	mkdir -p build/build
+	mv build/main.js build/build/main.js
+	mkdir -p build/js
+	cp -r js/* build/js
+	cp index.html build/index.html
+	@say -v "Trinoids" Finished building dual paddle for web.
+	open build/index.html 

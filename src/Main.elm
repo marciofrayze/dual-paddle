@@ -4,8 +4,6 @@ import Browser
 import Browser.Events exposing (onAnimationFrameDelta, onKeyDown, onKeyUp)
 import Canvas exposing (..)
 import Canvas.Settings exposing (..)
-import Canvas.Settings.Advanced exposing (..)
-import Canvas.Settings.Text exposing (TextAlign(..))
 import Color
 import Html exposing (Html, div)
 import Html.Attributes exposing (style)
@@ -123,7 +121,7 @@ renderGame count player =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ onAnimationFrameDelta Frame
         , onKeyDown (Decode.map KeyDown keyDecoder)
@@ -134,17 +132,17 @@ subscriptions model =
 keyDecoder : Decode.Decoder Key
 keyDecoder =
     Decode.field "key" Decode.string
-        |> Decode.andThen
+        |> Decode.map
             (\key ->
                 case key of
                     "ArrowLeft" ->
-                        Decode.succeed ArrowLeft
+                        ArrowLeft
 
                     "ArrowRight" ->
-                        Decode.succeed ArrowRight
+                        ArrowRight
 
                     _ ->
-                        Decode.succeed UnknownKey
+                        UnknownKey
             )
 
 

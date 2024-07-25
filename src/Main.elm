@@ -13,6 +13,7 @@ import Json.Decode as Decode
 type alias Model =
     { count : Float
     , player : Player
+    , ball : Ball
     }
 
 
@@ -34,6 +35,16 @@ type alias Player =
     , moving : PlayerMovement
     , width : Float
     , height : Float
+    , speed : Float
+    }
+
+
+type alias Ball =
+    { x : Float
+    , y : Float
+    , speed : Float
+    , angle : Float
+    , size : Float
     }
 
 
@@ -45,31 +56,35 @@ type Key
 
 main : Program () Model Msg
 main =
-    let
-        initialPlayerWidth =
-            150
-
-        initialPlayerHeigth =
-            15
-
-        initialPlayerXPosition =
-            (gameWidth / 2) - (initialPlayerWidth / 2)
-
-        initialPlayerYPosition =
-            gameHeight - (initialPlayerHeigth * 1.5)
-    in
     Browser.element
-        { init =
-            \() ->
-                ( { count = 0
-                  , player = { x = initialPlayerXPosition, y = initialPlayerYPosition, moving = NotMoving, width = initialPlayerWidth, height = initialPlayerHeigth }
-                  }
-                , Cmd.none
-                )
+        { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
         }
+
+
+init : () -> ( Model, Cmd Msg )
+init () =
+    ( { count = 0
+      , player =
+            { x = (gameWidth / 2) - (150 / 2)
+            , y = gameHeight - 30
+            , moving = NotMoving
+            , width = 150
+            , height = 15
+            , speed = 0.3
+            }
+      , ball =
+            { x = (gameWidth / 2) - (5 / 2)
+            , y = gameHeight - 40
+            , speed = 0.1
+            , angle = 4.71239 -- 270 degrees in radians
+            , size = 5
+            }
+      }
+    , Cmd.none
+    )
 
 
 gameWidth : number
@@ -93,7 +108,7 @@ view model =
             ( gameWidth, gameHeight )
             [ style "border" "10px solid rgba(0,0,0,0.7)" ]
             [ clearScreen
-            , renderGame model.count model.player
+            , renderGame model.count model.player model.ball
             ]
         ]
 
@@ -108,11 +123,19 @@ playerShape player =
     rect ( player.x, player.y ) player.width player.height
 
 
-renderGame : Float -> Player -> Renderable
-renderGame count player =
+ballShape : Ball -> Shape
+ballShape ball =
+    circle ( ball.x, ball.y ) ball.size
+
+
+renderGame : Float -> Player -> Ball -> Renderable
+renderGame count player ball =
     let
         gameShapes =
-            shapes [] [ playerShape player ]
+            shapes []
+                [ playerShape player
+                , ballShape ball
+                ]
 
         frameCountText =
             text [] ( 50, 50 ) (String.fromFloat count)
@@ -177,32 +200,45 @@ update msg model =
     case msg of
         Frame delta ->
             let
-                newModel =
+                newPlayer =
                     case model.player.moving of
                         MovingLeft ->
                             let
                                 newPlayerXPosition =
-                                    model.player.x - (delta * 0.5)
+                                    model.player.x - (delta * model.player.speed)
 
                                 updatePlayerXPosition player x =
                                     { player | x = x }
                             in
-                            { model | player = updatePlayerXPosition model.player newPlayerXPosition }
+                            updatePlayerXPosition model.player newPlayerXPosition
 
                         MovingRight ->
                             let
                                 newPlayerXPosition =
-                                    model.player.x + (delta * 0.5)
+                                    model.player.x + (delta * model.player.speed)
 
                                 updatePlayerXPosition player x =
                                     { player | x = x }
                             in
-                            { model | player = updatePlayerXPosition model.player newPlayerXPosition }
+                            updatePlayerXPosition model.player newPlayerXPosition
 
                         NotMoving ->
-                            model
+                            model.player
+
+                newBall =
+                    let
+                        deltaX =
+                            (model.ball.speed * cos model.ball.angle) * delta
+
+                        deltaY =
+                            (model.ball.speed * sin model.ball.angle) * delta
+
+                        updateBallPosition ball x y =
+                            { ball | x = x, y = y }
+                    in
+                    updateBallPosition model.ball (model.ball.x + deltaX) (model.ball.y + deltaY)
             in
-            ( newModel, Cmd.none )
+            ( { model | player = newPlayer, ball = newBall }, Cmd.none )
 
         KeyDown key ->
             case key of

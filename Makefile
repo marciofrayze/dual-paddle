@@ -2,6 +2,7 @@
 
 help:
 	@echo "\n\nAvailable commands:\n"
+	@echo "run-elm-watch-hot-and-http-server: run locally in dev mode with hot reload using elm-watch and http-server in parallel.\n"
 	@echo "run-elm-watch-hot: run locally in dev mode with hot reload using elm-watch.\n"
 	@echo "build-prod: build the production version of the webapp using elm-watch.\n"
 	@echo "upgrade: upgrade the elm dependencies using elm-json.\n"
@@ -12,6 +13,9 @@ help:
 
 run-elm-watch-hot:
 	npx elm-watch hot
+
+run-elm-watch-hot-and-http-server:
+	npx concurrently "npx elm-watch make --optimize" "http-server" "sleep 1 ; open http://localhost:8080"
 
 build-prod:
 	npx elm-watch make --optimize

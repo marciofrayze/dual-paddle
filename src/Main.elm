@@ -79,7 +79,7 @@ init () =
             { x = (gameWidth / 2) - (5 / 2)
             , y = gameHeight - 40
             , speed = 0.1
-            , angle = 4.71239 -- 270 degrees in radians
+            , angle = 2.71239 -- 270 degrees in radians
             , size = 5
             }
       }
@@ -227,16 +227,46 @@ update msg model =
 
                 newBall =
                     let
-                        deltaX =
-                            (model.ball.speed * cos model.ball.angle) * delta
+                        newBallAngle ball =
+                            if ballHitWall ball then
+                                -- Reflect the ball angle when it hits a wall
+                                if ball.y - (ball.size / 2) <= 0 then
+                                    2 * pi - ball.angle
 
-                        deltaY =
-                            (model.ball.speed * sin model.ball.angle) * delta
+                                else if ball.y + (ball.size / 2) >= gameHeight then
+                                    2 * pi - ball.angle
 
-                        updateBallPosition ball x y =
-                            { ball | x = x, y = y }
+                                else if ball.x - (ball.size / 2) <= 0 then
+                                    pi - ball.angle
+
+                                else
+                                    pi - ball.angle
+
+                            else
+                                ball.angle
+
+                        deltaX angle =
+                            (model.ball.speed * cos angle) * delta
+
+                        deltaY angle =
+                            (model.ball.speed * sin angle) * delta
+
+                        newBallX ball =
+                            ball.x + deltaX (newBallAngle ball)
+
+                        newBallY ball =
+                            ball.y + deltaY (newBallAngle ball)
+
+                        updateBall ball x y angle =
+                            { ball | x = x, y = y, angle = angle }
+
+                        ballHitWall ball =
+                            (ball.y - (ball.size / 2) <= 0)
+                                || (ball.y + (ball.size / 2) >= gameHeight)
+                                || (ball.x - (ball.size / 2) <= 0)
+                                || (ball.x + (ball.size / 2) >= gameWidth)
                     in
-                    updateBallPosition model.ball (model.ball.x + deltaX) (model.ball.y + deltaY)
+                    updateBall model.ball (newBallX model.ball) (newBallY model.ball) (newBallAngle model.ball)
             in
             ( { model | player = newPlayer, ball = newBall }, Cmd.none )
 

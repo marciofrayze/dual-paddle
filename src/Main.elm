@@ -227,23 +227,23 @@ update msg model =
 
                 newBall =
                     let
-                        newBallAngle ball =
-                            if ballHitWall ball then
+                        newAngle =
+                            if ballHitWall model.ball then
                                 -- Reflect the ball angle when it hits a wall
-                                if ball.y - (ball.size / 2) <= 0 then
-                                    2 * pi - ball.angle
+                                if model.ball.y - (model.ball.size / 2) <= 0 then
+                                    2 * pi - model.ball.angle
 
-                                else if ball.y + (ball.size / 2) >= gameHeight then
-                                    2 * pi - ball.angle
+                                else if model.ball.y + (model.ball.size / 2) >= gameHeight then
+                                    2 * pi - model.ball.angle
 
-                                else if ball.x - (ball.size / 2) <= 0 then
-                                    pi - ball.angle
+                                else if model.ball.x - (model.ball.size / 2) <= 0 then
+                                    pi - model.ball.angle
 
                                 else
-                                    pi - ball.angle
+                                    pi - model.ball.angle
 
                             else
-                                ball.angle
+                                model.ball.angle
 
                         deltaX angle =
                             (model.ball.speed * cos angle) * delta
@@ -252,10 +252,10 @@ update msg model =
                             (model.ball.speed * sin angle) * delta
 
                         newBallX ball =
-                            ball.x + deltaX (newBallAngle ball)
+                            ball.x + deltaX newAngle
 
                         newBallY ball =
-                            ball.y + deltaY (newBallAngle ball)
+                            ball.y + deltaY newAngle
 
                         updateBall ball x y angle =
                             { ball | x = x, y = y, angle = angle }
@@ -266,7 +266,7 @@ update msg model =
                                 || (ball.x - (ball.size / 2) <= 0)
                                 || (ball.x + (ball.size / 2) >= gameWidth)
                     in
-                    updateBall model.ball (newBallX model.ball) (newBallY model.ball) (newBallAngle model.ball)
+                    updateBall model.ball (newBallX model.ball) (newBallY model.ball) newAngle
             in
             ( { model | player = newPlayer, ball = newBall }, Cmd.none )
 

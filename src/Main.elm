@@ -11,9 +11,10 @@ import Json.Decode as Decode
 
 
 type alias Model =
-    { count : Float
+    { score : Int
     , player : Player
     , ball : Ball
+    , walls : List Wall
     }
 
 
@@ -37,6 +38,18 @@ type alias Player =
     , height : Float
     , speed : Float
     }
+
+
+type alias Object =
+    { x : Float
+    , y : Float
+    , width : Float
+    , height : Float
+    }
+
+
+type alias Wall =
+    Object
 
 
 type alias Ball =
@@ -66,7 +79,7 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init () =
-    ( { count = 0
+    ( { score = 0
       , player =
             { x = (gameWidth / 2) - (150 / 2)
             , y = gameHeight - 30
@@ -77,11 +90,18 @@ init () =
             }
       , ball =
             { x = (gameWidth / 2) - (5 / 2)
-            , y = gameHeight - 40
-            , speed = 0.1
-            , angle = 2.71239 -- 270 degrees in radians
+            , y = gameHeight / 2
+            , speed = 0.2
+            , angle = 3.6
             , size = 5
             }
+      , walls =
+            [ { x = 0, y = 0, width = gameWidth, height = 10 }
+            , { x = 0, y = 0, width = 10, height = gameHeight }
+            , { x = gameWidth - 10, y = 0, width = 10, height = gameHeight }
+
+            --    { x = 0, y = gameHeight - 10, width = gameWidth, height = 10 }
+            ]
       }
     , Cmd.none
     )
@@ -106,16 +126,16 @@ view model =
         ]
         [ Canvas.toHtml
             ( gameWidth, gameHeight )
-            [ style "border" "10px solid rgba(0,0,0,0.7)" ]
+            []
             [ clearScreen
-            , renderGame model.count model.player model.ball
+            , renderGame model.score model.player model.ball model.walls
             ]
         ]
 
 
 clearScreen : Renderable
 clearScreen =
-    shapes [ fill Color.white ] [ rect ( 0, 0 ) gameWidth gameHeight ]
+    shapes [ fill Color.lightGray ] [ rect ( 0, 0 ) gameWidth gameHeight ]
 
 
 playerShape : Player -> Shape
@@ -128,19 +148,29 @@ ballShape ball =
     circle ( ball.x, ball.y ) ball.size
 
 
-renderGame : Float -> Player -> Ball -> Renderable
-renderGame count player ball =
+wallShape : Wall -> Shape
+wallShape wall =
+    rect ( wall.x, wall.y ) wall.width wall.height
+
+
+renderGame : Int -> Player -> Ball -> List Wall -> Renderable
+renderGame score player ball walls =
     let
         gameShapes =
             shapes []
-                [ playerShape player
-                , ballShape ball
-                ]
+                ([ playerShape player
+                 , ballShape ball
+                 ]
+                    ++ List.map wallShape walls
+                )
 
-        frameCountText =
-            text [] ( 50, 50 ) (String.fromFloat count)
+        ballAngleText =
+            text [] ( 50, 50 ) ("Ball angle: " ++ String.fromFloat ball.angle)
+
+        scoreText =
+            text [] ( 50, 75 ) ("Score: " ++ String.fromInt score)
     in
-    group [] [ gameShapes, frameCountText ]
+    group [] [ gameShapes, ballAngleText, scoreText ]
 
 
 subscriptions : Model -> Sub Msg
@@ -167,6 +197,76 @@ keyDecoder =
                     _ ->
                         UnknownKey
             )
+
+
+checkBallCollisionWith : Ball -> Object -> Bool
+checkBallCollisionWith ball object =
+    let
+        ballLeft =
+            ball.x
+
+        ballRight =
+            ball.x + ball.size
+
+        ballTop =
+            ball.y
+
+        ballBottom =
+            ball.y + ball.size
+
+        objectLeft =
+            object.x
+
+        objectRight =
+            object.x + object.width
+
+        objectTop =
+            object.y
+
+        objectBottom =
+            object.y + object.height
+    in
+    ballRight
+        >= objectLeft
+        && ballLeft
+        <= objectRight
+        && ballBottom
+        >= objectTop
+        && ballTop
+        <= objectBottom
+
+
+ballBouncer :
+    Float
+    -> Ball
+    ->
+        { x : Float
+        , y : Float
+        , width : Float
+        , height : Float
+        }
+    -> Float
+ballBouncer delta ball object =
+    let
+        nextBallPosition =
+            { ball
+                | x = ball.x + (delta * ball.speed * cos ball.angle)
+                , y = ball.y + (delta * ball.speed * sin ball.angle)
+            }
+
+        willCollide =
+            (checkBallCollisionWith ball object == False)
+                && checkBallCollisionWith nextBallPosition object
+    in
+    if willCollide then
+        if ball.angle + (pi / 2) > 2 * pi then
+            (pi + (pi / 2)) * -1
+
+        else
+            pi / 2
+
+    else
+        0
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -225,50 +325,37 @@ update msg model =
                         NotMoving ->
                             model.player
 
-                newBall =
+                moveBall ball =
                     let
-                        newAngle =
-                            if ballHitWall model.ball then
-                                -- Reflect the ball angle when it hits a wall
-                                if model.ball.y - (model.ball.size / 2) <= 0 then
-                                    2 * pi - model.ball.angle
+                        newX =
+                            ball.x + (delta * ball.speed * cos ball.angle)
 
-                                else if model.ball.y + (model.ball.size / 2) >= gameHeight then
-                                    2 * pi - model.ball.angle
+                        newY =
+                            ball.y + (delta * ball.speed * sin ball.angle)
 
-                                else if model.ball.x - (model.ball.size / 2) <= 0 then
-                                    pi - model.ball.angle
-
-                                else
-                                    pi - model.ball.angle
-
-                            else
-                                model.ball.angle
-
-                        deltaX angle =
-                            (model.ball.speed * cos angle) * delta
-
-                        deltaY angle =
-                            (model.ball.speed * sin angle) * delta
-
-                        newBallX ball =
-                            ball.x + deltaX newAngle
-
-                        newBallY ball =
-                            ball.y + deltaY newAngle
-
-                        updateBall ball x y angle =
-                            { ball | x = x, y = y, angle = angle }
-
-                        ballHitWall ball =
-                            (ball.y - (ball.size / 2) <= 0)
-                                || (ball.y + (ball.size / 2) >= gameHeight)
-                                || (ball.x - (ball.size / 2) <= 0)
-                                || (ball.x + (ball.size / 2) >= gameWidth)
+                        updateBallPosition x y =
+                            { ball | x = x, y = y }
                     in
-                    updateBall model.ball (newBallX model.ball) (newBallY model.ball) newAngle
+                    updateBallPosition newX newY
+
+                wallsAngleToBounce =
+                    List.map (ballBouncer delta model.ball) model.walls
+                        |> List.foldl (\angle acc -> angle + acc) 0
+
+                playerAngleToBounce =
+                    ballBouncer delta model.ball { x = model.player.x, y = model.player.y, width = model.player.width, height = model.player.height }
+
+                score =
+                    if wallsAngleToBounce /= 0 || playerAngleToBounce /= 0 then
+                        model.score + 1
+
+                    else
+                        model.score
+
+                bounceBall ball =
+                    { ball | angle = ball.angle + wallsAngleToBounce + playerAngleToBounce }
             in
-            ( { model | player = newPlayer, ball = newBall }, Cmd.none )
+            ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall, score = score }, Cmd.none )
 
         KeyDown key ->
             case key of

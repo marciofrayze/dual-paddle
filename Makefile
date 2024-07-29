@@ -15,7 +15,7 @@ run-elm-watch-hot:
 	npx elm-watch hot
 
 run-elm-watch-hot-and-http-server:
-	npx concurrently "npx elm-watch make --optimize" "http-server" "sleep 1 ; open http://localhost:8080"
+	npx concurrently "npx elm-watch hot" "sleep 1 ; http-server" "sleep 1 ; open http://localhost:8080"
 
 build-prod:
 	npx elm-watch make --optimize
@@ -25,7 +25,7 @@ build-prod:
 	cp -r js/* build/js
 	cp index.html build/index.html
 	@say -v "Trinoids" Finished building dual paddle for web.
-	open build/index.html 
+	open build/index.html
 
 upgrade:
 	elm-json upgrade

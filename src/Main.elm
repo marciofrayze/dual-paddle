@@ -77,6 +77,16 @@ main =
         }
 
 
+initBall : Ball
+initBall =
+    { x = (gameWidth / 2) - (5 / 2)
+    , y = gameHeight / 2
+    , speed = 2
+    , angle = 3.6
+    , size = 5
+    }
+
+
 init : () -> ( Model, Cmd Msg )
 init () =
     ( { score = 0
@@ -86,15 +96,10 @@ init () =
             , moving = NotMoving
             , width = 150
             , height = 15
-            , speed = 0.3
+            , speed = 2
             }
       , ball =
-            { x = (gameWidth / 2) - (5 / 2)
-            , y = gameHeight / 2
-            , speed = 0.2
-            , angle = 3.6
-            , size = 5
-            }
+            initBall
       , walls =
             [ { x = 0, y = 0, width = gameWidth, height = 10 }
             , { x = 0, y = 0, width = 10, height = gameHeight }
@@ -237,8 +242,7 @@ checkBallCollisionWith ball object =
 
 
 ballBouncer :
-    Float
-    -> Ball
+    Ball
     ->
         { x : Float
         , y : Float
@@ -246,12 +250,12 @@ ballBouncer :
         , height : Float
         }
     -> Float
-ballBouncer delta ball object =
+ballBouncer ball object =
     let
         nextBallPosition =
             { ball
-                | x = ball.x + (delta * ball.speed * cos ball.angle)
-                , y = ball.y + (delta * ball.speed * sin ball.angle)
+                | x = ball.x + (ball.speed * cos ball.angle)
+                , y = ball.y + (ball.speed * sin ball.angle)
             }
 
         willCollide =
@@ -298,14 +302,17 @@ update msg model =
                     { player | moving = movement }
     in
     case msg of
-        Frame delta ->
+        Frame _ ->
             let
+                playerLost =
+                    model.ball.y > gameHeight + 100
+
                 newPlayer =
                     case model.player.moving of
                         MovingLeft ->
                             let
                                 newPlayerXPosition =
-                                    model.player.x - (delta * model.player.speed)
+                                    model.player.x - model.player.speed
 
                                 updatePlayerXPosition player x =
                                     { player | x = x }
@@ -315,7 +322,7 @@ update msg model =
                         MovingRight ->
                             let
                                 newPlayerXPosition =
-                                    model.player.x + (delta * model.player.speed)
+                                    model.player.x + model.player.speed
 
                                 updatePlayerXPosition player x =
                                     { player | x = x }
@@ -328,10 +335,10 @@ update msg model =
                 moveBall ball =
                     let
                         newX =
-                            ball.x + (delta * ball.speed * cos ball.angle)
+                            ball.x + (ball.speed * cos ball.angle)
 
                         newY =
-                            ball.y + (delta * ball.speed * sin ball.angle)
+                            ball.y + (ball.speed * sin ball.angle)
 
                         updateBallPosition x y =
                             { ball | x = x, y = y }
@@ -339,11 +346,11 @@ update msg model =
                     updateBallPosition newX newY
 
                 wallsAngleToBounce =
-                    List.map (ballBouncer delta model.ball) model.walls
+                    List.map (ballBouncer model.ball) model.walls
                         |> List.foldl (\angle acc -> angle + acc) 0
 
                 playerAngleToBounce =
-                    ballBouncer delta model.ball { x = model.player.x, y = model.player.y, width = model.player.width, height = model.player.height }
+                    ballBouncer model.ball { x = model.player.x, y = model.player.y, width = model.player.width, height = model.player.height }
 
                 score =
                     if wallsAngleToBounce /= 0 || playerAngleToBounce /= 0 then
@@ -352,10 +359,21 @@ update msg model =
                     else
                         model.score
 
+                newSpeed =
+                    if (wallsAngleToBounce /= 0 || playerAngleToBounce /= 0) && model.ball.speed < 1 then
+                        model.ball.speed
+
+                    else
+                        model.ball.speed
+
                 bounceBall ball =
-                    { ball | angle = ball.angle + wallsAngleToBounce + playerAngleToBounce }
+                    { ball | angle = ball.angle + wallsAngleToBounce + playerAngleToBounce, speed = newSpeed }
             in
-            ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall, score = score }, Cmd.none )
+            if playerLost then
+                ( { model | player = newPlayer, ball = initBall, score = 0 }, Cmd.none )
+
+            else
+                ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall, score = score }, Cmd.none )
 
         KeyDown key ->
             case key of

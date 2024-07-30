@@ -82,7 +82,7 @@ initBall =
     { x = (gameWidth / 2) - (5 / 2)
     , y = gameHeight / 2
     , speed = 2
-    , angle = 3.6
+    , angle = 2
     , size = 5
     }
 
@@ -104,6 +104,8 @@ init () =
             [ { x = 0, y = 0, width = gameWidth, height = 10 }
             , { x = 0, y = 0, width = 10, height = gameHeight }
             , { x = gameWidth - 10, y = 0, width = 10, height = gameHeight }
+            , { x = gameWidth / 3, y = gameWidth / 5, width = gameWidth / 4, height = 90 }
+            , { x = gameWidth / 2, y = gameWidth / 3, width = gameWidth / 4, height = 90 }
 
             --    { x = 0, y = gameHeight - 10, width = gameWidth, height = 10 }
             ]
@@ -231,14 +233,10 @@ checkBallCollisionWith ball object =
         objectBottom =
             object.y + object.height
     in
-    ballRight
-        >= objectLeft
-        && ballLeft
-        <= objectRight
-        && ballBottom
-        >= objectTop
-        && ballTop
-        <= objectBottom
+    (ballRight >= objectLeft)
+        && (ballLeft <= objectRight)
+        && (ballBottom >= objectTop)
+        && (ballTop <= objectBottom)
 
 
 ballBouncer :
@@ -252,22 +250,29 @@ ballBouncer :
     -> Float
 ballBouncer ball object =
     let
-        nextBallPosition =
-            { ball
-                | x = ball.x + (ball.speed * cos ball.angle)
-                , y = ball.y + (ball.speed * sin ball.angle)
-            }
+        randomBallBounce : Float
+        randomBallBounce =
+            toFloat (modBy 2 (round (ball.x * ball.y * ball.angle * ball.speed))) / 100
 
-        willCollide =
+        nextBallVertically =
+            { ball | x = ball.x + (cos ball.angle * ball.speed) }
+
+        nextBallHorizontally =
+            { ball | y = ball.y - (sin ball.angle * ball.speed) }
+
+        willCollideHorizontaly =
             (checkBallCollisionWith ball object == False)
-                && checkBallCollisionWith nextBallPosition object
-    in
-    if willCollide then
-        if ball.angle + (pi / 2) > 2 * pi then
-            (pi + (pi / 2)) * -1
+                && checkBallCollisionWith nextBallHorizontally object
 
-        else
-            pi / 2
+        willCollideVerticaly =
+            (checkBallCollisionWith ball object == False)
+                && checkBallCollisionWith nextBallVertically object
+    in
+    if willCollideHorizontaly then
+        (2 * pi) - (2 * ball.angle)
+
+    else if willCollideVerticaly then
+        pi - (2 * ball.angle)
 
     else
         0
@@ -338,7 +343,7 @@ update msg model =
                             ball.x + (ball.speed * cos ball.angle)
 
                         newY =
-                            ball.y + (ball.speed * sin ball.angle)
+                            ball.y - (ball.speed * sin ball.angle)
 
                         updateBallPosition x y =
                             { ball | x = x, y = y }
@@ -368,12 +373,22 @@ update msg model =
 
                 bounceBall ball =
                     { ball | angle = ball.angle + wallsAngleToBounce + playerAngleToBounce, speed = newSpeed }
+
+                fixAngle ball =
+                    if ball.angle > 2 * pi then
+                        { ball | angle = ball.angle - 2 * pi }
+
+                    else if ball.angle < 0 then
+                        { ball | angle = ball.angle + 2 * pi }
+
+                    else
+                        ball
             in
             if playerLost then
                 ( { model | player = newPlayer, ball = initBall, score = 0 }, Cmd.none )
 
             else
-                ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall, score = score }, Cmd.none )
+                ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall |> fixAngle, score = score }, Cmd.none )
 
         KeyDown key ->
             case key of

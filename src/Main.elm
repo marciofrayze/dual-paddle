@@ -303,7 +303,7 @@ playerBallBouncer ball player =
                     ball.x + (ball.size / 2)
 
                 distanceFromCenter =
-                    ballCenter - playerCenter
+                    playerCenter - ballCenter
 
                 maxDistanceFromCenter =
                     player.width / 2
@@ -315,7 +315,7 @@ playerBallBouncer ball player =
                 0
 
             else
-                (angleMultiplier * (pi / 2) * -1) / 3
+                (angleMultiplier * (pi / 2)) / 3
     in
     if willCollideHorizontaly then
         (2 * pi) - (2 * ball.angle) + randomBallBounce + angleDueToPlayerPosition

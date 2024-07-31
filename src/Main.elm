@@ -81,7 +81,7 @@ initBall : Ball
 initBall =
     { x = (gameWidth / 2) - (5 / 2)
     , y = gameHeight / 2
-    , speed = 2
+    , speed = 2.5
     , angle = 2
     , size = 5
     }
@@ -239,20 +239,13 @@ checkBallCollisionWith ball object =
         && (ballTop <= objectBottom)
 
 
-ballBouncer :
-    Ball
-    ->
-        { x : Float
-        , y : Float
-        , width : Float
-        , height : Float
-        }
-    -> Float
-ballBouncer ball object =
+wallBallBouncer : Ball -> Wall -> Float
+wallBallBouncer ball wall =
     let
         randomBallBounce : Float
         randomBallBounce =
-            toFloat (modBy 2 (round (ball.x * ball.y * ball.angle * ball.speed))) / 100
+            -- A "random" number between -0.1 e 0.1
+            (toFloat (modBy 2 (round (ball.x * ball.y * ball.angle * ball.speed))) / 10) - 0.05
 
         nextBallVertically =
             { ball | x = ball.x + (cos ball.angle * ball.speed) }
@@ -261,18 +254,74 @@ ballBouncer ball object =
             { ball | y = ball.y - (sin ball.angle * ball.speed) }
 
         willCollideHorizontaly =
-            (checkBallCollisionWith ball object == False)
-                && checkBallCollisionWith nextBallHorizontally object
+            (checkBallCollisionWith ball wall == False)
+                && checkBallCollisionWith nextBallHorizontally wall
 
         willCollideVerticaly =
-            (checkBallCollisionWith ball object == False)
-                && checkBallCollisionWith nextBallVertically object
+            (checkBallCollisionWith ball wall == False)
+                && checkBallCollisionWith nextBallVertically wall
     in
     if willCollideHorizontaly then
-        (2 * pi) - (2 * ball.angle)
+        (2 * pi) - (2 * ball.angle) + randomBallBounce
 
     else if willCollideVerticaly then
-        pi - (2 * ball.angle)
+        pi - (2 * ball.angle) + randomBallBounce
+
+    else
+        0
+
+
+playerBallBouncer : Ball -> Object -> Float
+playerBallBouncer ball player =
+    let
+        randomBallBounce : Float
+        randomBallBounce =
+            -- A "random" number between -0.1 e 0.1
+            (toFloat (modBy 2 (round (ball.x * ball.y * ball.angle * ball.speed))) / 10) - 0.05
+
+        nextBallVertically =
+            { ball | x = ball.x + (cos ball.angle * ball.speed) }
+
+        nextBallHorizontally =
+            { ball | y = ball.y - (sin ball.angle * ball.speed) }
+
+        willCollideHorizontaly =
+            (checkBallCollisionWith ball player == False)
+                && checkBallCollisionWith nextBallHorizontally player
+
+        willCollideVerticaly =
+            (checkBallCollisionWith ball player == False)
+                && checkBallCollisionWith nextBallVertically player
+
+        -- changes the angle of the ball based on the player position, allowing the player to control the ball
+        angleDueToPlayerPosition =
+            let
+                playerCenter =
+                    player.x + (player.width / 2)
+
+                ballCenter =
+                    ball.x + (ball.size / 2)
+
+                distanceFromCenter =
+                    ballCenter - playerCenter
+
+                maxDistanceFromCenter =
+                    player.width / 2
+
+                angleMultiplier =
+                    distanceFromCenter / maxDistanceFromCenter
+            in
+            if distanceFromCenter == 0 then
+                0
+
+            else
+                (angleMultiplier * (pi / 2) * -1) / 3
+    in
+    if willCollideHorizontaly then
+        (2 * pi) - (2 * ball.angle) + randomBallBounce + angleDueToPlayerPosition
+
+    else if willCollideVerticaly then
+        pi - (2 * ball.angle) + randomBallBounce + angleDueToPlayerPosition
 
     else
         0
@@ -282,10 +331,12 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         canMoveLeft player =
-            player.x > 0
+            -- wall width
+            player.x > 10
 
         canMoveRight player =
-            player.x + player.width < gameWidth
+            -- wall width
+            player.x + player.width < gameWidth - 10
 
         updatePlayerPosition player movement =
             case movement of
@@ -351,11 +402,12 @@ update msg model =
                     updateBallPosition newX newY
 
                 wallsAngleToBounce =
-                    List.map (ballBouncer model.ball) model.walls
+                    List.map (wallBallBouncer model.ball) model.walls
                         |> List.foldl (\angle acc -> angle + acc) 0
 
                 playerAngleToBounce =
-                    ballBouncer model.ball { x = model.player.x, y = model.player.y, width = model.player.width, height = model.player.height }
+                    -- TODO: is there a better way to handle this?
+                    playerBallBouncer model.ball { width = model.player.width, height = model.player.height, x = model.player.x, y = model.player.y }
 
                 score =
                     if wallsAngleToBounce /= 0 || playerAngleToBounce /= 0 then
@@ -383,12 +435,22 @@ update msg model =
 
                     else
                         ball
+
+                forceMinimumAngle ball =
+                    if ball.angle < 0.1 then
+                        { ball | angle = 0.1 }
+
+                    else if ball.angle > 2 * pi - 0.1 then
+                        { ball | angle = 2 * pi - 0.1 }
+
+                    else
+                        ball
             in
             if playerLost then
                 ( { model | player = newPlayer, ball = initBall, score = 0 }, Cmd.none )
 
             else
-                ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall |> fixAngle, score = score }, Cmd.none )
+                ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall |> fixAngle |> forceMinimumAngle, score = score }, Cmd.none )
 
         KeyDown key ->
             case key of

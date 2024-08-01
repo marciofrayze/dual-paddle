@@ -15,6 +15,7 @@ type alias Model =
     , player : Player
     , ball : Ball
     , walls : List Wall
+    , highScore : Int
     }
 
 
@@ -79,9 +80,9 @@ main =
 
 initBall : Ball
 initBall =
-    { x = (gameWidth / 2) - (5 / 2)
-    , y = gameHeight / 2
-    , speed = 2.5
+    { x = gameWidth / 2
+    , y = gameHeight - 40
+    , speed = 1.5
     , angle = 2
     , size = 5
     }
@@ -104,11 +105,11 @@ init () =
             [ { x = 0, y = 0, width = gameWidth, height = 10 }
             , { x = 0, y = 0, width = 10, height = gameHeight }
             , { x = gameWidth - 10, y = 0, width = 10, height = gameHeight }
-            , { x = gameWidth / 3, y = gameWidth / 5, width = gameWidth / 4, height = 90 }
-            , { x = gameWidth / 2, y = gameWidth / 3, width = gameWidth / 4, height = 90 }
-
-            --    { x = 0, y = gameHeight - 10, width = gameWidth, height = 10 }
+            , { x = 100, y = 100, width = gameWidth / 4, height = 60 }
+            , { x = 500, y = 100, width = gameWidth / 4, height = 60 }
+            , { x = 350, y = 200, width = gameWidth / 8, height = 50 }
             ]
+      , highScore = 0
       }
     , Cmd.none
     )
@@ -135,7 +136,7 @@ view model =
             ( gameWidth, gameHeight )
             []
             [ clearScreen
-            , renderGame model.score model.player model.ball model.walls
+            , renderGame model.score model.highScore model.player model.ball model.walls
             ]
         ]
 
@@ -160,8 +161,8 @@ wallShape wall =
     rect ( wall.x, wall.y ) wall.width wall.height
 
 
-renderGame : Int -> Player -> Ball -> List Wall -> Renderable
-renderGame score player ball walls =
+renderGame : Int -> Int -> Player -> Ball -> List Wall -> Renderable
+renderGame score highScore player ball walls =
     let
         gameShapes =
             shapes []
@@ -172,12 +173,15 @@ renderGame score player ball walls =
                 )
 
         ballAngleText =
-            text [] ( 50, 50 ) ("Ball angle: " ++ String.fromFloat ball.angle)
+            text [] ( 50, 100 ) ("Ball angle: " ++ String.fromFloat ball.angle)
 
         scoreText =
-            text [] ( 50, 75 ) ("Score: " ++ String.fromInt score)
+            text [] ( 50, 50 ) ("Score: " ++ String.fromInt score)
+
+        highScoreText =
+            text [] ( 50, 75 ) ("Highscore: " ++ String.fromInt highScore)
     in
-    group [] [ gameShapes, ballAngleText, scoreText ]
+    group [] [ gameShapes, scoreText, highScoreText ]
 
 
 subscriptions : Model -> Sub Msg
@@ -248,10 +252,10 @@ wallBallBouncer ball wall =
             (toFloat (modBy 2 (round (ball.x * ball.y * ball.angle * ball.speed))) / 10) - 0.05
 
         nextBallVertically =
-            { ball | y = ball.y - (2 * (ball.speed * sin ball.angle)) }
+            { ball | y = ball.y - (ball.speed * sin ball.angle) }
 
         nextBallHorizontally =
-            { ball | x = ball.x + (2 * (ball.speed * cos ball.angle)) }
+            { ball | x = ball.x + (ball.speed * cos ball.angle) }
 
         willCollideHorizontaly =
             (checkBallCollisionWith ball wall == False)
@@ -417,8 +421,8 @@ update msg model =
                         model.score
 
                 newSpeed =
-                    if (wallsAngleToBounce /= 0 || playerAngleToBounce /= 0) && model.ball.speed < 1 then
-                        model.ball.speed
+                    if (wallsAngleToBounce /= 0 || playerAngleToBounce /= 0) && model.ball.speed <= 4.5 then
+                        model.ball.speed + 0.1
 
                     else
                         model.ball.speed
@@ -447,7 +451,15 @@ update msg model =
                         ball
             in
             if playerLost then
-                ( { model | player = newPlayer, ball = initBall, score = 0 }, Cmd.none )
+                let
+                    newHighScore =
+                        if model.score > model.highScore then
+                            model.score
+
+                        else
+                            model.highScore
+                in
+                ( { model | player = newPlayer, ball = initBall, score = 0, highScore = newHighScore }, Cmd.none )
 
             else
                 ( { model | player = newPlayer, ball = bounceBall model.ball |> moveBall |> fixAngle |> forceMinimumAngle, score = score }, Cmd.none )

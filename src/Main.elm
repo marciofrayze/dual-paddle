@@ -210,16 +210,16 @@ checkBallCollisionWith : Ball -> Object -> Bool
 checkBallCollisionWith ball object =
     let
         ballLeft =
-            ball.x
+            ball.x - (ball.size / 2)
 
         ballRight =
-            ball.x + ball.size
+            ball.x + (ball.size / 2)
 
         ballTop =
-            ball.y
+            ball.y - (ball.size / 2)
 
         ballBottom =
-            ball.y + ball.size
+            ball.y + (ball.size / 2)
 
         objectLeft =
             object.x
@@ -248,10 +248,10 @@ wallBallBouncer ball wall =
             (toFloat (modBy 2 (round (ball.x * ball.y * ball.angle * ball.speed))) / 10) - 0.05
 
         nextBallVertically =
-            { ball | x = ball.x + (cos ball.angle * ball.speed) }
+            { ball | y = ball.y - (2 * (ball.speed * sin ball.angle)) }
 
         nextBallHorizontally =
-            { ball | y = ball.y - (sin ball.angle * ball.speed) }
+            { ball | x = ball.x + (2 * (ball.speed * cos ball.angle)) }
 
         willCollideHorizontaly =
             (checkBallCollisionWith ball wall == False)
@@ -262,10 +262,10 @@ wallBallBouncer ball wall =
                 && checkBallCollisionWith nextBallVertically wall
     in
     if willCollideHorizontaly then
-        (2 * pi) - (2 * ball.angle) + randomBallBounce
+        pi - (2 * ball.angle) + randomBallBounce
 
     else if willCollideVerticaly then
-        pi - (2 * ball.angle) + randomBallBounce
+        (2 * pi) - (2 * ball.angle) + randomBallBounce
 
     else
         0
@@ -280,10 +280,10 @@ playerBallBouncer ball player =
             (toFloat (modBy 2 (round (ball.x * ball.y * ball.angle * ball.speed))) / 10) - 0.05
 
         nextBallVertically =
-            { ball | x = ball.x + (cos ball.angle * ball.speed) }
+            { ball | y = ball.y - (ball.speed * sin ball.angle) }
 
         nextBallHorizontally =
-            { ball | y = ball.y - (sin ball.angle * ball.speed) }
+            { ball | x = ball.x + (ball.speed * cos ball.angle) }
 
         willCollideHorizontaly =
             (checkBallCollisionWith ball player == False)
@@ -318,10 +318,10 @@ playerBallBouncer ball player =
                 (angleMultiplier * (pi / 2)) / 3
     in
     if willCollideHorizontaly then
-        (2 * pi) - (2 * ball.angle) + randomBallBounce + angleDueToPlayerPosition
+        pi - (2 * ball.angle) + randomBallBounce + angleDueToPlayerPosition
 
     else if willCollideVerticaly then
-        pi - (2 * ball.angle) + randomBallBounce + angleDueToPlayerPosition
+        (2 * pi) - (2 * ball.angle) + randomBallBounce + angleDueToPlayerPosition
 
     else
         0
@@ -407,7 +407,7 @@ update msg model =
 
                 playerAngleToBounce =
                     -- TODO: is there a better way to handle this?
-                    playerBallBouncer model.ball { width = model.player.width, height = model.player.height, x = model.player.x, y = model.player.y }
+                    playerBallBouncer model.ball { x = model.player.x, y = model.player.y, width = model.player.width, height = model.player.height }
 
                 score =
                     if wallsAngleToBounce /= 0 || playerAngleToBounce /= 0 then

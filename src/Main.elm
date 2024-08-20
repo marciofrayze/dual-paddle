@@ -1,12 +1,12 @@
 module Main exposing (main)
 
 import Browser
-import Browser.Events exposing (onAnimationFrameDelta, onKeyDown, onKeyUp)
+import Browser.Events exposing (onAnimationFrameDelta, onKeyDown, onKeyUp, onMouseDown, onMouseUp, onResize)
 import Canvas exposing (..)
 import Canvas.Settings exposing (..)
 import Color
 import Html exposing (Html, div)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (size, style)
 import Json.Decode as Decode
 
 
@@ -16,6 +16,8 @@ type alias Model =
     , ball : Ball
     , walls : List Wall
     , highScore : Int
+    , pixelWidth : Float
+    , pixelHeight : Float
     }
 
 
@@ -23,6 +25,9 @@ type Msg
     = Frame Float
     | KeyDown Key
     | KeyUp Key
+    | MouseDown ( Int, Int )
+    | MouseUp ()
+    | WindowResized Int Int
 
 
 type PlayerMovement
@@ -68,7 +73,11 @@ type Key
     | UnknownKey
 
 
-main : Program () Model Msg
+type alias Flags =
+    { windowWidth : Int, windowHeight : Int }
+
+
+main : Program Flags Model Msg
 main =
     Browser.element
         { init = init
@@ -88,9 +97,18 @@ initBall =
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init () =
-    ( { score = 0
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    let
+        newPixelWidth =
+            toFloat flags.windowWidth / gameWidth
+
+        newPixelHeight =
+            toFloat flags.windowHeight / gameHeight
+    in
+    ( { pixelWidth = newPixelWidth
+      , pixelHeight = newPixelHeight
+      , score = 0
       , player =
             { x = (gameWidth / 2) - (150 / 2)
             , y = gameHeight - 30
@@ -105,9 +123,9 @@ init () =
             [ { x = 0, y = 0, width = gameWidth, height = 10 }
             , { x = 0, y = 0, width = 10, height = gameHeight }
             , { x = gameWidth - 10, y = 0, width = 10, height = gameHeight }
-            , { x = 100, y = 100, width = gameWidth / 4, height = 60 }
-            , { x = 500, y = 100, width = gameWidth / 4, height = 60 }
-            , { x = 350, y = 200, width = gameWidth / 8, height = 50 }
+            , { x = 100, y = 100, width = gameWidth / 5, height = 60 }
+            , { x = 500, y = 100, width = gameWidth / 5, height = 60 }
+            , { x = 325, y = 200, width = gameWidth / 8, height = 50 }
             ]
       , highScore = 0
       }
@@ -125,51 +143,58 @@ gameHeight =
     600
 
 
+resizedRect : Point -> Float -> Float -> Float -> Float -> Shape
+resizedRect ( x, y ) width height pixelWidth pixelHeight =
+    rect ( x * pixelWidth, y * pixelHeight ) (width * pixelWidth) (height * pixelHeight)
+
+
+resizedBall : Point -> Float -> Float -> Float -> Shape
+resizedBall ( x, y ) radius pixelWidth pixelHeight =
+    resizedRect ( x - radius, y - radius ) (radius * 2) (radius * 2) pixelWidth pixelHeight
+
+
 view : Model -> Html Msg
 view model =
     div
-        [ style "display" "flex"
-        , style "justify-content" "center"
-        , style "align-items" "center"
-        ]
+        []
         [ Canvas.toHtml
-            ( gameWidth, gameHeight )
+            ( round (model.pixelWidth * gameWidth), round (model.pixelHeight * gameHeight) )
             []
-            [ clearScreen
-            , renderGame model.score model.highScore model.player model.ball model.walls
+            [ clearScreen (model.pixelWidth * gameWidth) (model.pixelHeight * gameHeight)
+            , renderGame model.score model.highScore model.player model.ball model.walls model.pixelWidth model.pixelHeight
             ]
         ]
 
 
-clearScreen : Renderable
-clearScreen =
-    shapes [ fill Color.lightGray ] [ rect ( 0, 0 ) gameWidth gameHeight ]
+clearScreen : Float -> Float -> Renderable
+clearScreen windowWidth windowHeight =
+    shapes [ fill Color.lightGray ] [ rect ( 0, 0 ) windowWidth windowHeight ]
 
 
-playerShape : Player -> Shape
-playerShape player =
-    rect ( player.x, player.y ) player.width player.height
+playerShape : Player -> Float -> Float -> Shape
+playerShape player pixelWidth pixelHeight =
+    resizedRect ( player.x, player.y ) player.width player.height pixelWidth pixelHeight
 
 
-ballShape : Ball -> Shape
-ballShape ball =
-    circle ( ball.x, ball.y ) ball.size
+ballShape : Ball -> Float -> Float -> Shape
+ballShape ball pixelWidth pixelHeight =
+    resizedBall ( ball.x, ball.y ) ball.size pixelWidth pixelHeight
 
 
-wallShape : Wall -> Shape
-wallShape wall =
-    rect ( wall.x, wall.y ) wall.width wall.height
+wallShape : Float -> Float -> Wall -> Shape
+wallShape pixelWidth pixelHeight wall =
+    resizedRect ( wall.x, wall.y ) wall.width wall.height pixelWidth pixelHeight
 
 
-renderGame : Int -> Int -> Player -> Ball -> List Wall -> Renderable
-renderGame score highScore player ball walls =
+renderGame : Int -> Int -> Player -> Ball -> List Wall -> Float -> Float -> Renderable
+renderGame score highScore player ball walls pixelWidth pixelHeight =
     let
         gameShapes =
             shapes []
-                ([ playerShape player
-                 , ballShape ball
+                ([ playerShape player pixelWidth pixelHeight
+                 , ballShape ball pixelWidth pixelHeight
                  ]
-                    ++ List.map wallShape walls
+                    ++ List.map (wallShape pixelWidth pixelHeight) walls
                 )
 
         ballAngleText =
@@ -190,6 +215,9 @@ subscriptions _ =
         [ onAnimationFrameDelta Frame
         , onKeyDown (Decode.map KeyDown keyDecoder)
         , onKeyUp (Decode.map KeyUp keyDecoder)
+        , onMouseDown (Decode.map MouseDown mouseDownDecoder)
+        , onMouseUp (Decode.map MouseUp mouseUpDecoder)
+        , onResize WindowResized
         ]
 
 
@@ -208,6 +236,21 @@ keyDecoder =
                     _ ->
                         UnknownKey
             )
+
+
+mouseDownDecoder : Decode.Decoder ( Int, Int )
+mouseDownDecoder =
+    Decode.map2 Tuple.pair (Decode.field "clientX" Decode.int) (Decode.field "clientY" Decode.int)
+
+
+mouseUpDecoder : Decode.Decoder ()
+mouseUpDecoder =
+    Decode.succeed ()
+
+
+sizeDecoder : Decode.Decoder ( Int, Int )
+sizeDecoder =
+    Decode.map2 Tuple.pair (Decode.field "width" Decode.int) (Decode.field "height" Decode.int)
 
 
 checkBallCollisionWith : Ball -> Object -> Bool
@@ -365,7 +408,8 @@ update msg model =
         Frame _ ->
             let
                 playerLost =
-                    model.ball.y > gameHeight + 100
+                    -- ball is out of bounds (in theory, it should never go off screen in the x axis, but right now the collision detection is not perfect)
+                    model.ball.y > gameHeight + 100 || model.ball.x < -100 || model.ball.x > gameWidth + 100
 
                 newPlayer =
                     case model.player.moving of
@@ -377,7 +421,11 @@ update msg model =
                                 updatePlayerXPosition player x =
                                     { player | x = x }
                             in
-                            updatePlayerXPosition model.player newPlayerXPosition
+                            if canMoveLeft model.player then
+                                updatePlayerXPosition model.player newPlayerXPosition
+
+                            else
+                                model.player
 
                         MovingRight ->
                             let
@@ -387,7 +435,11 @@ update msg model =
                                 updatePlayerXPosition player x =
                                     { player | x = x }
                             in
-                            updatePlayerXPosition model.player newPlayerXPosition
+                            if canMoveRight model.player then
+                                updatePlayerXPosition model.player newPlayerXPosition
+
+                            else
+                                model.player
 
                         NotMoving ->
                             model.player
@@ -440,12 +492,13 @@ update msg model =
                     else
                         ball
 
+                -- force the ball to have a minimum angle to avoid it getting stuck
                 forceMinimumAngle ball =
-                    if ball.angle < 0.1 then
+                    if
+                        (ball.angle < 0.1 && ball.angle > -0.1)
+                            || (ball.angle < pi + 0.1 && ball.angle > pi - 0.1)
+                    then
                         { ball | angle = 0.1 }
-
-                    else if ball.angle > 2 * pi - 0.1 then
-                        { ball | angle = 2 * pi - 0.1 }
 
                     else
                         ball
@@ -493,3 +546,46 @@ update msg model =
 
                 NotMoving ->
                     ( model, Cmd.none )
+
+        MouseDown ( x, y ) ->
+            if toFloat x > gameWidth / 2 then
+                ( { model | player = updatePlayerPosition model.player MovingRight }, Cmd.none )
+
+            else
+                ( { model | player = updatePlayerPosition model.player MovingLeft }, Cmd.none )
+
+        MouseUp () ->
+            ( { model | player = updatePlayerPosition model.player NotMoving }, Cmd.none )
+
+        WindowResized width height ->
+            let
+                ( newPixelWidth, newPixelHeight ) =
+                    calculatePixelWidthHeight width height
+            in
+            ( { model | pixelWidth = newPixelWidth, pixelHeight = newPixelHeight }, Cmd.none )
+
+
+calculatePixelWidthHeight : Int -> Int -> ( Float, Float )
+calculatePixelWidthHeight width height =
+    let
+        widthf =
+            toFloat width
+
+        heightf =
+            toFloat height
+
+        newPixelWidth =
+            if widthf / gameWidth > 0 then
+                widthf / gameWidth
+
+            else
+                1
+
+        newPixelHeight =
+            if heightf / gameHeight > 0 then
+                heightf / gameHeight
+
+            else
+                1
+    in
+    ( newPixelWidth, newPixelHeight )

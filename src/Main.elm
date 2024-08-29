@@ -1,13 +1,14 @@
 module Main exposing (main)
 
 import Browser
-import Browser.Events exposing (onAnimationFrameDelta, onKeyDown, onKeyUp, onMouseDown, onMouseUp, onResize)
+import Browser.Events exposing (onAnimationFrameDelta, onKeyDown, onKeyUp, onResize)
 import Canvas exposing (..)
 import Canvas.Settings exposing (..)
 import Color
 import Html exposing (Html, div)
-import Html.Attributes exposing (size, style)
+import Html.Attributes exposing (style)
 import Json.Decode as Decode
+import Touch exposing (onTouchEnds, onTouchStarts)
 
 
 type alias Model =
@@ -25,8 +26,10 @@ type Msg
     = Frame Float
     | KeyDown Key
     | KeyUp Key
-    | MouseDown ( Int, Int )
-    | MouseUp ()
+    | TouchLeftStarted
+    | TouchLeftEnded
+    | TouchRightStarted
+    | TouchRightEnded
     | WindowResized Int Int
 
 
@@ -135,12 +138,12 @@ init flags =
 
 gameWidth : number
 gameWidth =
-    800
+    600
 
 
 gameHeight : number
 gameHeight =
-    600
+    800
 
 
 resizedRect : Point -> Float -> Float -> Float -> Float -> Shape
@@ -155,6 +158,13 @@ resizedBall ( x, y ) radius pixelWidth pixelHeight =
 
 view : Model -> Html Msg
 view model =
+    let
+        touchAreaWidth =
+            String.fromFloat ((model.pixelWidth * gameWidth) / 2) ++ "px"
+
+        touchAreaHeigth =
+            String.fromFloat ((model.pixelHeight * gameHeight) / 3) ++ "px"
+    in
     div
         []
         [ Canvas.toHtml
@@ -163,6 +173,28 @@ view model =
             [ clearScreen (model.pixelWidth * gameWidth) (model.pixelHeight * gameHeight)
             , renderGame model.score model.highScore model.player model.ball model.walls model.pixelWidth model.pixelHeight
             ]
+        , -- invisible divs used as a game controller for the user to use touch as input
+          div
+            [ onTouchStarts TouchLeftStarted
+            , onTouchEnds TouchLeftEnded
+            , style "position" "fixed"
+            , style "bottom" "0"
+            , style "left" "0"
+            , style "width" touchAreaWidth
+            , style "height" touchAreaHeigth
+            ]
+            []
+        , div
+            -- in the right side of the screen
+            [ onTouchStarts TouchRightStarted
+            , onTouchEnds TouchRightEnded
+            , style "position" "fixed"
+            , style "bottom" "0"
+            , style "right" "0"
+            , style "width" touchAreaWidth
+            , style "height" touchAreaHeigth
+            ]
+            []
         ]
 
 
@@ -215,8 +247,6 @@ subscriptions _ =
         [ onAnimationFrameDelta Frame
         , onKeyDown (Decode.map KeyDown keyDecoder)
         , onKeyUp (Decode.map KeyUp keyDecoder)
-        , onMouseDown (Decode.map MouseDown mouseDownDecoder)
-        , onMouseUp (Decode.map MouseUp mouseUpDecoder)
         , onResize WindowResized
         ]
 
@@ -238,13 +268,13 @@ keyDecoder =
             )
 
 
-mouseDownDecoder : Decode.Decoder ( Int, Int )
-mouseDownDecoder =
+touchStarsDecoder : Decode.Decoder ( Int, Int )
+touchStarsDecoder =
     Decode.map2 Tuple.pair (Decode.field "clientX" Decode.int) (Decode.field "clientY" Decode.int)
 
 
-mouseUpDecoder : Decode.Decoder ()
-mouseUpDecoder =
+touchEndsDecoder : Decode.Decoder ()
+touchEndsDecoder =
     Decode.succeed ()
 
 
@@ -547,15 +577,25 @@ update msg model =
                 NotMoving ->
                     ( model, Cmd.none )
 
-        MouseDown ( x, y ) ->
-            if toFloat x > gameWidth / 2 then
-                ( { model | player = updatePlayerPosition model.player MovingRight }, Cmd.none )
+        TouchLeftStarted ->
+            ( { model | player = updatePlayerPosition model.player MovingLeft }, Cmd.none )
+
+        TouchLeftEnded ->
+            if model.player.moving == MovingLeft then
+                ( { model | player = updatePlayerPosition model.player NotMoving }, Cmd.none )
 
             else
-                ( { model | player = updatePlayerPosition model.player MovingLeft }, Cmd.none )
+                ( model, Cmd.none )
 
-        MouseUp () ->
-            ( { model | player = updatePlayerPosition model.player NotMoving }, Cmd.none )
+        TouchRightStarted ->
+            ( { model | player = updatePlayerPosition model.player MovingLeft }, Cmd.none )
+
+        TouchRightEnded ->
+            if model.player.moving == MovingRight then
+                ( { model | player = updatePlayerPosition model.player NotMoving }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
         WindowResized width height ->
             let

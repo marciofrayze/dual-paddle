@@ -588,7 +588,7 @@ update msg model =
                 ( model, Cmd.none )
 
         TouchRightStarted ->
-            ( { model | player = updatePlayerPosition model.player MovingLeft }, Cmd.none )
+            ( { model | player = updatePlayerPosition model.player MovingRight }, Cmd.none )
 
         TouchRightEnded ->
             if model.player.moving == MovingRight then
